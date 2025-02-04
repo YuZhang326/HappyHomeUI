@@ -1,25 +1,28 @@
-name: Build and Deploy
+name: Build and Test
 
-on:
-  push:
+on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    runs-on: macOS-latest
 
-      - name: Set up Node.js
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22.x
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build app
+      - name: Install Dependencies
         run: |
-          # run: echo "GOOGLE_MAP_KEY=${{ secrets.GOOGLE_MAP_KEY }}" >> $GITHUB_ENV
-          npm run build
+          npm install
+          cd ios && pod install && cd ..
+
+      - name: Build iOS
+        run: |
+          xcodebuild -workspace ios/HappyHomeUI.xcworkspace -scheme HappyHomeUI -sdk iphonesimulator -arch x86_64
+
+      - name: Build Android
+        run: |
+          cd android && ./gradlew assembleDebug
