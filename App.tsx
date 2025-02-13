@@ -21,7 +21,7 @@ export default function App() {
     Keyboard.dismiss();
     
     if (!username || !password) {
-      Alert.alert('Error', 'Please enter your username and password');
+      Alert.alert('错误', '请输入用户名和密码');
       return;
     }
 
@@ -32,11 +32,11 @@ export default function App() {
     <SafeAreaView style={styles.container}>
       {!loggedIn ? (
         <View style={styles.formContainer}>
-          <Text style={styles.title}>Happy Home</Text>
+          <Text style={styles.title}>用户登录</Text>
           
           <TextInput
             style={styles.input}
-            placeholder="User Name"
+            placeholder="用户名"
             value={username}
             onChangeText={setUsername}
             autoCapitalize="none"
@@ -45,7 +45,7 @@ export default function App() {
           
           <TextInput
             style={styles.input}
-            placeholder="Password"
+            placeholder="密码"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
@@ -53,17 +53,17 @@ export default function App() {
           />
           
           <Button
-            title="Login"
+            title="登录"
             onPress={handleLogin}
             color={Platform.OS === 'ios' ? '#007AFF' : '#2196F3'}
           />
         </View>
       ) : (
         <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Welcome back，</Text>
+          <Text style={styles.welcomeText}>欢迎回来，</Text>
           <Text style={styles.usernameText}>{username}!</Text>
           
-          <Text style={styles.sectionTitle}>Current location information</Text>
+          <Text style={styles.sectionTitle}>当前位置信息</Text>
           <Location />
         </View>
       )}

@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Platform, PermissionsAndroid } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+  PermissionsAndroid
+} from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 
 const Location = () => {
@@ -11,19 +18,18 @@ const Location = () => {
     const requestPermissions = async () => {
       try {
         if (Platform.OS === 'android') {
-          // Android 需要动态请求权限
           const granted = await PermissionsAndroid.request(
             PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
             {
-              title: 'Location Permission Request',
-              message: 'We need access to your location to provide a better service',
-              buttonNeutral: 'Ask Later',
-              buttonNegative: 'Cancel',
-              buttonPositive: 'Agree',
+              title: '位置权限申请',
+              message: '我们需要访问您的位置以提供更好的服务',
+              buttonNeutral: '稍后询问',
+              buttonNegative: '取消',
+              buttonPositive: '同意',
             }
           );
           if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-            throw new Error('Location Permission Denied');
+            throw new Error('位置权限被拒绝');
           }
         }
 
@@ -55,27 +61,22 @@ const Location = () => {
     if (error) {
       return (
         <Text style={styles.errorText}>
-          Unable to Retrieve Location: {error}
+          无法获取位置: {error}
         </Text>
       );
-    }
-
-    // **确保 location 存在，并且 latitude / longitude 存在**
-    if (!location || location.latitude == null || location.longitude == null) {
-      return <Text style={styles.errorText}>Location data is unavailable.</Text>;
     }
 
     return (
       <View style={styles.infoContainer}>
         <Text style={styles.infoText}>
-          Latitude: {location.latitude ? location.latitude.toFixed(6) : 'N/A'}
+          纬度: {location.latitude?.toFixed(6) || 'N/A'}
         </Text>
         <Text style={styles.infoText}>
-          Longitude: {location.longitude ? location.longitude.toFixed(6) : 'N/A'}
+          经度: {location.longitude?.toFixed(6) || 'N/A'}
         </Text>
-        {location.altitude !== undefined && (
+        {location.altitude && (
           <Text style={styles.infoText}>
-            Altitude: {location.altitude.toFixed(2)} 米
+            海拔: {location.altitude.toFixed(2)} 米
           </Text>
         )}
       </View>
@@ -91,6 +92,7 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: '#f8f9fa',
     borderRadius: 10,
+    width: '100%',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
