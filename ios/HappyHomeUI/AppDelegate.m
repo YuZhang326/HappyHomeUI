@@ -1,4 +1,6 @@
-#import <GoogleMaps/GoogleMaps.h> // 添加头文件
+#import <GoogleMaps/GoogleMaps.h>
 
-// 在 didFinishLaunchingWithOptions 方法首行添加
-[GMSServices provideAPIKey:@"AIzaSyCvUouqMUMbP4bkFxxGljhqSPzqlJqizYg"];
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+  [GMSServices provideAPIKey:@"${GOOGLE_API_KEY}"];
+  // ...其他代码
+}

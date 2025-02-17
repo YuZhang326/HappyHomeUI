@@ -17,6 +17,9 @@ end
 target 'HappyHomeUI' do
   config = use_native_modules!
 
+  # 在这里添加一行，启用 Google Maps
+  pod 'react-native-google-maps', :path => '../node_modules/react-native-maps'
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
