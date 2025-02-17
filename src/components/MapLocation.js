@@ -1,135 +1,202 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  Dimensions,
-  ActivityIndicator
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  Platform,
+  PermissionsAndroid,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import Geocoder from 'react-native-geocoding';
-import Geolocation from '@react-native-community/geolocation';
 
-// 初始化地理编码
-Geocoder.init('YOUR_GOOGLE_API_KEY');
+const MapAndFormScreen = () => {
+  // 地图与定位状态
+  const [region, setRegion] = useState({
+    // 地图初始位置
+    latitude: 37.78825,
+    longitude: -122.4324,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  });
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [loadingLocation, setLoadingLocation] = useState(false);
 
-const { width, height } = Dimensions.get('window');
+  // 表单状态
+  const [time, setTime] = useState(null);
+  const [doorNumber, setDoorNumber] = useState('');
+  const [street, setStreet] = useState('');
+  const [postalCode, setPostalCode] = useState('');
 
-const MapLocation = () => {
-  const [position, setPosition] = useState(null);
-  const [address, setAddress] = useState('');
-  const [loading, setLoading] = useState(true);
-
+  // 组件加载时获取当前定位与网络时间
   useEffect(() => {
-    const fetchLocation = async () => {
-      try {
-        // 获取当前位置
-        Geolocation.getCurrentPosition(
-          async (pos) => {
-            const { latitude, longitude } = pos.coords;
-            
-            // 获取地址信息
-            const json = await Geocoder.from(latitude, longitude);
-            const addr = json.results[0].formatted_address;
-            
-            setPosition({ latitude, longitude });
-            setAddress(addr);
-            setLoading(false);
-          },
-          (error) => {
-            console.error(error);
-            setLoading(false);
-          },
-          { enableHighAccuracy: true, timeout: 15000 }
-        );
-      } catch (error) {
-        console.error(error);
-        setLoading(false);
-      }
-    };
-
-    fetchLocation();
+    requestLocation();
+    fetchCurrentTime();
   }, []);
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4A90E2" />
-      </View>
-    );
-  }
+  // ======== 获取当前位置 ========
+  const requestLocationPermissionAndroid = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn(err);
+      return false;
+    }
+  };
 
+  const requestLocation = async () => {
+    setLoadingLocation(true);
+
+    if (Platform.OS === 'android') {
+      const hasPermission = await requestLocationPermissionAndroid();
+      if (!hasPermission) {
+        Alert.alert('提示', '定位权限被拒绝，无法显示当前位置');
+        setLoadingLocation(false);
+        return;
+      }
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const { latitude, longitude } = position.coords;
+        setRegion(prev => ({
+          ...prev,
+          latitude,
+          longitude,
+        }));
+        setCurrentLocation({ latitude, longitude });
+        setLoadingLocation(false);
+      },
+      error => {
+        Alert.alert('定位错误', error.message);
+        setLoadingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+    );
+  };
+
+  // ======== 从网络获取当前时区的时间 ========
+  const fetchCurrentTime = async () => {
+    try {
+      // worldtimeapi.org 会根据请求的IP返回相应时区时间
+      const response = await fetch('https://worldtimeapi.org/api/ip');
+      const data = await response.json();
+      // data.datetime 格式例如 "2023-01-01T12:34:56.789..."
+      setTime(data.datetime);
+    } catch (err) {
+      console.warn('获取网络时间失败：', err);
+    }
+  };
+
+  // ======== 点击“打卡”按钮的逻辑 ========
+  const handleCheckIn = () => {
+    // 这里可以将当前输入的数据提交到服务器等
+    Alert.alert(
+      '打卡成功',
+      `时间：${time}\n门牌号：${doorNumber}\n街名：${street}\n邮编：${postalCode}`
+    );
+  };
+
+  // ======== 界面渲染 ========
   return (
     <View style={styles.container}>
-      {/* 地图部分 */}
-      <MapView
-        style={styles.map}
-        initialRegion={{
-          ...position,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
-      >
-        <Marker
-          coordinate={position}
-          title="您的位置"
-          description={address}
+      {/* 上半部分：地图 */}
+      <View style={styles.mapContainer}>
+        <MapView
+          style={styles.map}
+          region={region}
+          onRegionChangeComplete={reg => setRegion(reg)}
         >
-          <View style={styles.marker}>
-            <View style={styles.markerPin} />
-          </View>
-        </Marker>
-      </MapView>
+          {currentLocation && (
+            <Marker coordinate={currentLocation} title="我的位置" />
+          )}
+        </MapView>
+        {loadingLocation && (
+          <ActivityIndicator
+            style={styles.loadingIndicator}
+            size="large"
+            color="#007AFF"
+          />
+        )}
+      </View>
 
-      {/* 地址信息部分 */}
-      <View style={styles.addressContainer}>
-        <Text style={styles.addressTitle}>当前位置</Text>
-        <Text style={styles.addressText}>{address}</Text>
+      {/* 下半部分：表单 */}
+      <View style={styles.formContainer}>
+        {/* 当前时区时间 */}
+        <Text style={styles.timeText}>
+          当前时区时间：
+          {time ? time : '获取中...'}
+        </Text>
+
+        <TextInput
+          style={styles.input}
+          placeholder="门牌号"
+          value={doorNumber}
+          onChangeText={setDoorNumber}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="街名"
+          value={street}
+          onChangeText={setStreet}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="邮编"
+          value={postalCode}
+          onChangeText={setPostalCode}
+          keyboardType="numeric"
+        />
+
+        <Button title="打卡" onPress={handleCheckIn} />
       </View>
     </View>
   );
 };
 
+export default MapAndFormScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F5F8FA',
+  },
+  mapContainer: {
+    flex: 0.5, // 上半部分
   },
   map: {
     width: '100%',
-    height: height * 0.5, // 占据屏幕上半部分
+    height: '100%',
   },
-  marker: {
-    alignItems: 'center',
+  loadingIndicator: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: '45%',
   },
-  markerPin: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#4A90E2',
-    borderWidth: 2,
-    borderColor: 'white',
-  },
-  addressContainer: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  addressTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 10,
-  },
-  addressText: {
-    fontSize: 16,
-    color: '#666',
-    lineHeight: 24,
-  },
-  loadingContainer: {
-    flex: 1,
+  formContainer: {
+    flex: 0.5, // 下半部分
+    padding: 16,
+    backgroundColor: '#FFF',
     justifyContent: 'center',
-    alignItems: 'center',
+  },
+  timeText: {
+    fontSize: 16,
+    marginBottom: 12,
+    color: '#333',
+  },
+  input: {
+    height: 44,
+    borderWidth: 1,
+    borderColor: '#DDD',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 12,
+    fontSize: 15,
+    color: '#333',
   },
 });
-
-export default MapLocation;
